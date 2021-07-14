@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["localhost", "tweetrs.herokuapp.com"]
 
@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     "graphql_auth",
     "django_filters",
     "corsheaders",
-    "whitenoise.runserver_nostatic",
     "users",
     "tweet",
 ]
@@ -59,10 +58,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
 
 CORS_ORIGIN_WHITELIST = ["http://localhost:3000"]
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "twitter.urls"
 
@@ -177,14 +176,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = "/static/"
-# location where django collect all static files
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
-# location where you will store your static files
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "project_name/static")]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MEDIA_URL = "/media/"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.User"
