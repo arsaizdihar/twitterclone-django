@@ -1,15 +1,19 @@
 import graphene
-from graphene_django.types import DjangoObjectType
+from django.conf import settings
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from graphene_django.filter.fields import DjangoFilterConnectionField
-from .models import Tweet
+from graphene_django.types import DjangoObjectType
+from graphene_file_upload.scalars import Upload
 from users.schema import UserWithFollowNode
+
+from .models import Tweet
 
 
 class TweetNode(DjangoObjectType):
     class Meta:
         model = Tweet
         fields = "__all__"
-        filter_fields = "__all__"
+        filter_fields = ("text", "user", "comment_to")
         interfaces = (graphene.relay.Node,)
 
     pk = graphene.Int()
@@ -43,6 +47,10 @@ class TweetNode(DjangoObjectType):
             != None
         )
 
+    def resolve_image(self, info):
+        if self.image:
+            return f"{info.context.scheme}://{info.context.get_host()}{settings.MEDIA_URL}{self.image}"
+
 
 class TweetQuery(graphene.ObjectType):
     tweets = DjangoFilterConnectionField(TweetNode, username=graphene.String())
@@ -57,7 +65,6 @@ class TweetQuery(graphene.ObjectType):
         user=None,
         username=None,
     ):
-        print(username)
         if username is not None:
             return Tweet.objects.filter(user__username=username).all()
         if not info.context.user.is_authenticated:
@@ -74,12 +81,14 @@ class PostTweet(graphene.Mutation):
 
     class Arguments:
         text = graphene.String(required=True)
+        file = Upload(required=False)
 
     @staticmethod
-    def mutate(root, info, text):
+    def mutate(root, info, text, file: InMemoryUploadedFile = None):
         if not info.context.user.is_authenticated:
             return None
-        new_tweet = Tweet(text=text, user=info.context.user)
+        new_tweet = Tweet(text=text, user=info.context.user, image=file)
+        new_tweet.full_clean()
         new_tweet.save()
         return PostTweet(tweet=new_tweet, success=True)
 
