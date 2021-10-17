@@ -1,10 +1,12 @@
+import graphene
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser
+from django.core import validators
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.hashers import make_password
-from django.core import validators
+
 from .managers import CustomUserManager
-import graphene
+
 
 # Create your models here.
 class User(AbstractUser):
@@ -38,8 +40,12 @@ class User(AbstractUser):
         related_name="followers",
         related_query_name="followers",
         symmetrical=False,
+        blank=True,
     )
     photo = models.TextField(_("Profile photo"), blank=True, null=True)
+    private = models.BooleanField(default=False)
+    follow_requests = models.ManyToManyField("self", symmetrical=False, blank=True)
+
     objects = CustomUserManager()
 
     def get_full_name(self):

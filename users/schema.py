@@ -1,9 +1,10 @@
-from .models import User
 import graphene
 from graphene_django import DjangoObjectType
-from graphql_jwt.shortcuts import get_token, create_refresh_token
-from graphql_auth.schema import UserNode
 from graphene_django.filter.fields import DjangoFilterConnectionField
+from graphql_auth.schema import UserNode
+from graphql_jwt.shortcuts import create_refresh_token, get_token
+
+from .models import User
 
 # class UserType(DjangoObjectType):
 #     class Meta:
@@ -34,6 +35,7 @@ class UserWithFollowNode(UserNode):
     is_self = graphene.Boolean()
     is_followed = graphene.Boolean()
     is_following = graphene.Boolean()
+    is_requested = graphene.Boolean()
 
     def resolve_followers_count(self, info):
         return self.followers.count()
@@ -64,6 +66,15 @@ class UserWithFollowNode(UserNode):
             .filter(following__id=info.context.user.id)
             .first()
             is not None
+        )
+
+    def resolve_is_requested(self, info):
+        if not info.context.user.is_authenticated:
+            return False
+        return (
+            User.objects.filter(id=self.pk)
+            .filter(follow_requests=info.context.user)
+            .exists()
         )
 
 
@@ -99,8 +110,10 @@ class FollowQuery(graphene.ObjectType):
     def resolve_unfollowed(self, info):
         if not info.context.user.is_authenticated:
             return None
-        return User.objects.exclude(followers__id=info.context.user.id).exclude(
-            id=info.context.user.id
+        return (
+            User.objects.exclude(followers__id=info.context.user.id)
+            .exclude(id=info.context.user.id)
+            .exclude(private=True)
         )
 
 
@@ -125,16 +138,45 @@ class FollowCount(graphene.ObjectType):
         return User.objects.filter(id=user_id).first().following.count()
 
 
-class FollowUser(graphene.Mutation):
+class AcceptFollow(graphene.Mutation):
     success = graphene.Boolean()
-    is_followed = graphene.Boolean()
-    user = graphene.Field(UserWithFollowNode)
 
     class Arguments:
         user_id = graphene.Int(required=True)
 
     @staticmethod
-    def mutate(root, info, user_id):
+    def mutate(cls, info, user_id):
+        if (
+            not info.context.user.is_authenticated
+            or int(user_id) == info.context.user.id
+        ):
+            return None
+        user_query = User.objects.filter(id=user_id)
+        user = user_query.first()
+        if not user:
+            return None
+        is_follower = info.context.user.followers.filter(id=user_id).exists()
+        is_requested = info.context.user.follow_requests.filter(id=user_id).exists()
+        if is_requested:
+            info.context.user.follow_requests.remove(user)
+            if not is_follower:
+                info.context.user.followers.add(user)
+            return cls(success=True)
+        else:
+            return cls(success=is_follower)
+
+
+class FollowUser(graphene.Mutation):
+    success = graphene.Boolean()
+    is_followed = graphene.Boolean()
+    user = graphene.Field(UserWithFollowNode)
+    is_requested = graphene.Boolean()
+
+    class Arguments:
+        user_id = graphene.Int(required=True)
+
+    @staticmethod
+    def mutate(cls, info, user_id):
         if (
             not info.context.user.is_authenticated
             or int(user_id) == info.context.user.id
@@ -143,17 +185,32 @@ class FollowUser(graphene.Mutation):
         user_query = User.objects.filter(id=user_id)
         if not user_query.first():
             return None
-        followed = user_query.filter(followers__id=info.context.user.id).first()
-        user = user_query.first()
+        followed = user_query.filter(followers__id=info.context.user.id).exists()
+        user: User = user_query.first()
         if followed:
             user.followers.remove(info.context.user)
         else:
+            if user.private:
+                requested = user_query.filter(follow_requests__id=info.context.user.id)
+                if requested:
+                    user.follow_requests.remove(info.context.user)
+                else:
+                    user.follow_requests.add(info.context.user)
+                return FollowUser(
+                    success=True,
+                    is_followed=False,
+                    user=user,
+                    is_requested=not requested,
+                )
             user.followers.add(info.context.user)
-        return FollowUser(success=True, is_followed=not followed, user=user)
+        return FollowUser(
+            success=True, is_followed=not followed, user=user, is_requested=False
+        )
 
 
 class UserMutation(graphene.ObjectType):
     follow = FollowUser.Field()
+    accept_follow = AcceptFollow.Field()
 
 
 # class RegisterMutation(graphene.Mutation):

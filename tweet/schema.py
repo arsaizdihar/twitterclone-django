@@ -4,6 +4,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from graphene_django.filter.fields import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
+from users.models import User
 from users.schema import UserWithFollowNode
 
 from .models import Tweet
@@ -66,9 +67,20 @@ class TweetQuery(graphene.ObjectType):
         username=None,
     ):
         if username is not None:
+            requested_user = User.objects.filter(username=username).first()
+            if not requested_user:
+                return Tweet.objects.none()
+            if requested_user.private:
+                if (
+                    not info.context.user.is_authenticated
+                    or not requested_user.followers.filter(
+                        id=info.context.user.id
+                    ).exists()
+                ):
+                    return Tweet.objects.none()
             return Tweet.objects.filter(user__username=username).all()
         if not info.context.user.is_authenticated:
-            return None
+            return Tweet.objects.none()
         result = Tweet.objects.filter(
             user__in=info.context.user.following.all()
         ) | Tweet.objects.filter(user=info.context.user)

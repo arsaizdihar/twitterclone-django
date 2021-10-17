@@ -1,9 +1,9 @@
 import graphene
 from graphene_django import DjangoListField
 from graphql_auth import mutations
-from users.schema import UserQuery, UserMutation, MeQuery, FollowQuery
+from tweet.schema import TweetMutation, TweetQuery
 from users.models import User
-from tweet.schema import TweetQuery, TweetMutation
+from users.schema import AcceptFollow, FollowQuery, MeQuery, UserMutation, UserQuery
 
 
 class AuthMutation(graphene.ObjectType):
@@ -17,7 +17,9 @@ class Query(UserQuery, MeQuery, TweetQuery, FollowQuery, graphene.ObjectType):
     pass
 
 
-class Mutation(AuthMutation, TweetMutation, UserMutation, graphene.ObjectType):
+class Mutation(
+    AuthMutation, TweetMutation, UserMutation, AcceptFollow, graphene.ObjectType
+):
     pass
 
 
