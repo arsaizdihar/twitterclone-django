@@ -84,7 +84,7 @@ class TweetQuery(graphene.ObjectType):
         else:
             queryset = Tweet.objects
         if username is not None:
-            requested_user = queryset.filter(username=username).first()
+            requested_user = User.objects.filter(username=username).first()
             if not requested_user:
                 return queryset.none()
             if requested_user.private and requested_user.id != info.context.user.id:
