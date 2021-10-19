@@ -128,7 +128,7 @@ class PostTweet(graphene.Mutation):
         new_tweet = Tweet(text=text, user=info.context.user, image=file, comment_to=tweet_to_comment)
         new_tweet.full_clean()
         new_tweet.save()
-        if tweet_to_comment:
+        if tweet_to_comment and tweet_to_comment.user != info.context.user:
             user: User = tweet_to_comment.user
             user.email_user(f"New reply from {info.context.user.username}", f"Click link to read more. https://arsaiz.xyz/tweets/{tweet_to_comment.id}")
         return PostTweet(tweet=new_tweet, success=True)
