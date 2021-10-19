@@ -33,7 +33,7 @@ class Tweet(models.Model):
     )
 
     def have_access(self, user: User):
-        return not self.user.private or (user.is_authenticated and self.user.followers.filter(id=user.id).exists())
+        return not self.user.private or self.user == user or (user.is_authenticated and self.user.followers.filter(id=user.id).exists())
 
     class Meta:
         verbose_name = "Tweet"
