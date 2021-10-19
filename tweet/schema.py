@@ -111,6 +111,21 @@ class TweetQuery(graphene.ObjectType):
         return result.all()
 
 
+class DeleteTweet(graphene.Mutation):
+    success = graphene.Boolean()
+
+    class Arguments:
+        id = graphene.Int(required=True)
+
+    @staticmethod
+    def mutate(cls, info, id=None):
+        tweet = Tweet.objects.filter(user=info.context.user, id=id).first()
+        if not tweet:
+            return cls(success=False)
+        tweet.delete()
+        return cls(success=True)
+
+
 class PostTweet(graphene.Mutation):
     tweet = graphene.Field(TweetNode)
     success = graphene.Boolean()
@@ -184,3 +199,4 @@ class TweetMutation(graphene.ObjectType):
     post_tweet = PostTweet.Field()
     like_tweet = LikeMutation.Field()
     retweet = RetweetMutation.Field()
+    delete_tweet = DeleteTweet.Field()
