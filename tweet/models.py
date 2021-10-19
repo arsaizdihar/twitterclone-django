@@ -32,6 +32,9 @@ class Tweet(models.Model):
         User, related_name="retweets", related_query_name="retweets", blank=True
     )
 
+    def have_access(self, user: User):
+        return not self.user.private or (user.is_authenticated and self.user.followers.filter(id=user.id).exists())
+
     class Meta:
         verbose_name = "Tweet"
         verbose_name_plural = "Tweets"

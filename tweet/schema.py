@@ -1,6 +1,7 @@
 import graphene
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.shortcuts import get_object_or_404
 from graphene_django.filter.fields import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
@@ -20,9 +21,11 @@ class TweetNode(DjangoObjectType):
     pk = graphene.Int()
     likes_count = graphene.Int()
     retweet_count = graphene.Int()
+    comments_count = graphene.Int()
     user = graphene.Field(UserWithFollowNode)
     is_liked = graphene.Boolean()
     likes = DjangoFilterConnectionField(UserWithFollowNode)
+    text = graphene.String()
 
     def resolve_pk(self, info):
         return self.pk
@@ -32,6 +35,9 @@ class TweetNode(DjangoObjectType):
 
     def resolve_retweet_count(self, info):
         return self.retweets.count()
+
+    def resolve_comments_count(self, info):
+        return Tweet.objects.filter(comment_to__id=self.pk).count()
 
     def resolve_user(self, info):
         return self.user
@@ -48,14 +54,20 @@ class TweetNode(DjangoObjectType):
             != None
         )
 
+    def resolve_text(self, info):
+        return self.text if self.have_access(info.context.user) else ""
+
     def resolve_image(self, info):
-        if self.image:
+        if self.image and self.have_access(info.context.user):
             return f"{info.context.scheme}://{info.context.get_host()}{settings.MEDIA_URL}{self.image}"
 
 
 class TweetQuery(graphene.ObjectType):
-    tweets = DjangoFilterConnectionField(TweetNode, username=graphene.String())
-    tweet = graphene.relay.Node.Field(TweetNode)
+    tweets = DjangoFilterConnectionField(TweetNode, username=graphene.String(), exclude_comment=graphene.Boolean())
+    tweet = graphene.Field(TweetNode, id=graphene.Int(required=True))
+
+    def resolve_tweet(self, info, id=None):
+        return get_object_or_404(Tweet, id=id)
 
     def resolve_tweets(
         self,
@@ -65,11 +77,16 @@ class TweetQuery(graphene.ObjectType):
         comment_to=None,
         user=None,
         username=None,
+        exclude_comment=None
     ):
+        if exclude_comment:
+            queryset = Tweet.objects.filter(comment_to=None)
+        else:
+            queryset = Tweet.objects
         if username is not None:
-            requested_user = User.objects.filter(username=username).first()
+            requested_user = queryset.filter(username=username).first()
             if not requested_user:
-                return Tweet.objects.none()
+                return queryset.none()
             if requested_user.private and requested_user.id != info.context.user.id:
                 if (
                     not info.context.user.is_authenticated
@@ -77,13 +94,20 @@ class TweetQuery(graphene.ObjectType):
                         id=info.context.user.id
                     ).exists()
                 ):
-                    return Tweet.objects.none()
-            return Tweet.objects.filter(user__username=username).all()
+                    return queryset.none()
+            return queryset.filter(user__username=username).all()
         if not info.context.user.is_authenticated:
-            return Tweet.objects.none()
-        result = Tweet.objects.filter(
+            return queryset.none()
+
+        if comment_to:
+            if queryset.filter(id=comment_to).exists():
+                return queryset.filter(comment_to__id=comment_to).all()
+            else:
+                return queryset.none()
+
+        result = queryset.filter(
             user__in=info.context.user.following.all()
-        ) | Tweet.objects.filter(user=info.context.user)
+        ) | queryset.filter(user=info.context.user)
         return result.all()
 
 
@@ -92,14 +116,16 @@ class PostTweet(graphene.Mutation):
     success = graphene.Boolean()
 
     class Arguments:
+        comment_to = graphene.Int()
         text = graphene.String(required=True)
         file = Upload(required=False)
 
     @staticmethod
-    def mutate(root, info, text, file: InMemoryUploadedFile = None):
+    def mutate(root, info, text, file: InMemoryUploadedFile = None, comment_to=None):
         if not info.context.user.is_authenticated:
             return None
-        new_tweet = Tweet(text=text, user=info.context.user, image=file)
+        tweet_to_comment = Tweet.objects.filter(id=comment_to).first()
+        new_tweet = Tweet(text=text, user=info.context.user, image=file, comment_to=tweet_to_comment)
         new_tweet.full_clean()
         new_tweet.save()
         return PostTweet(tweet=new_tweet, success=True)
