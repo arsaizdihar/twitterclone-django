@@ -133,9 +133,9 @@ class DeleteTweet(graphene.Mutation):
     def mutate(cls, info, id=None):
         tweet = Tweet.objects.filter(user=info.context.user, id=id).first()
         if not tweet:
-            return cls(success=False)
+            return DeleteTweet(success=False)
         tweet.delete()
-        return cls(success=True)
+        return DeleteTweet(success=True)
 
 
 class PostTweet(graphene.Mutation):

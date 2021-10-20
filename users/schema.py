@@ -161,9 +161,9 @@ class AcceptFollow(graphene.Mutation):
             info.context.user.follow_requests.remove(user)
             if not is_follower:
                 info.context.user.followers.add(user)
-            return cls(success=True)
+            return AcceptFollow(success=True)
         else:
-            return cls(success=is_follower)
+            return AcceptFollow(success=is_follower)
 
 
 class FollowUser(graphene.Mutation):
