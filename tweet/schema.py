@@ -63,7 +63,7 @@ class TweetNode(DjangoObjectType):
 
 
 class TweetQuery(graphene.ObjectType):
-    tweets = DjangoFilterConnectionField(TweetNode, username=graphene.String(), exclude_comment=graphene.Boolean())
+    tweets = DjangoFilterConnectionField(TweetNode, comment_to_pk=graphene.Int(), username=graphene.String(), exclude_comment=graphene.Boolean(), timeline=graphene.Boolean())
     tweet = graphene.Field(TweetNode, id=graphene.Int(required=True))
 
     def resolve_tweet(self, info, id=None):
@@ -77,12 +77,16 @@ class TweetQuery(graphene.ObjectType):
         comment_to=None,
         user=None,
         username=None,
-        exclude_comment=None
+        exclude_comment=None,
+        comment_to_pk=None,
+        timeline=None,
+        **kwargs
     ):
         if exclude_comment:
             queryset = Tweet.objects.filter(comment_to=None)
         else:
             queryset = Tweet.objects
+        # return Tweet.objects.all()
         if username is not None:
             requested_user = User.objects.filter(username=username).first()
             if not requested_user:
@@ -96,19 +100,27 @@ class TweetQuery(graphene.ObjectType):
                 ):
                     return queryset.none()
             return queryset.filter(user__username=username).all()
-        if not info.context.user.is_authenticated:
-            return queryset.none()
 
-        if comment_to:
-            if queryset.filter(id=comment_to).exists():
-                return queryset.filter(comment_to__id=comment_to).all()
+        if timeline:
+            if not info.context.user.is_authenticated:
+                return queryset.none()
+            result = queryset.filter(
+                user__in=info.context.user.following.all()
+            ) | queryset.filter(user=info.context.user)
+            return result.all()
+
+        
+        if comment_to_pk:
+            if queryset.filter(id=comment_to_pk).exists():
+                queryset = queryset.filter(comment_to__id=comment_to_pk)
+                print(queryset.count())
+                return queryset.all()
             else:
                 return queryset.none()
+        
+        return queryset.filter(user__private=False).all()
 
-        result = queryset.filter(
-            user__in=info.context.user.following.all()
-        ) | queryset.filter(user=info.context.user)
-        return result.all()
+        
 
 
 class DeleteTweet(graphene.Mutation):
