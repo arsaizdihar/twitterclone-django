@@ -223,3 +223,4 @@ class TweetMutation(graphene.ObjectType):
     like_tweet = LikeMutation.Field()
     retweet = RetweetMutation.Field()
     delete_tweet = DeleteTweet.Field()
+    refetch = RefetchMutation.Field()
