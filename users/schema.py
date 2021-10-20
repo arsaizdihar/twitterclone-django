@@ -109,7 +109,7 @@ class FollowQuery(graphene.ObjectType):
 
     def resolve_unfollowed(self, info):
         if not info.context.user.is_authenticated:
-            return None
+            return User.objects.none()
         return (
             User.objects.exclude(followers__id=info.context.user.id)
             .exclude(id=info.context.user.id)
