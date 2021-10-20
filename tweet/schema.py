@@ -120,6 +120,17 @@ class TweetQuery(graphene.ObjectType):
         
         return queryset.filter(user__private=False).all()
 
+
+class RefetchMutation(graphene.Mutation):
+    success = graphene.Boolean()
+
+    class Arguments:
+        data = graphene.String()
+
+    @staticmethod
+    def mutate(cls, info, id=None):
+        return RefetchMutation(success=True)
+
         
 
 
