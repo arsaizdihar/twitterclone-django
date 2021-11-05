@@ -102,7 +102,6 @@ if PRODUCTION:
             "PASSWORD": os.environ.get("DB_PASSWORD"),
             "HOST": "localhost",
             "PORT": "3306",
-            "COLLATION": "utf8_general_ci",
         },
         "OPTIONS": {"charset": "utf8mb4"},
     }
