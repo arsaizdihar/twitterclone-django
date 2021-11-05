@@ -128,7 +128,7 @@ class RefetchMutation(graphene.Mutation):
         data = graphene.String()
 
     @staticmethod
-    def mutate(cls, info, id=None):
+    def mutate(cls, info, data=None):
         return RefetchMutation(success=True)
 
         
