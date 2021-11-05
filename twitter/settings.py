@@ -103,7 +103,7 @@ if PRODUCTION:
             "HOST": "localhost",
             "PORT": "3306",
         },
-        "OPTIONS": {"charset": "utf8"},
+        "OPTIONS": {"charset": "utf8mb4"},
     }
 else:
     DATABASES = {
