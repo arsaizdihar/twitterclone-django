@@ -102,7 +102,9 @@ if PRODUCTION:
             "PASSWORD": os.environ.get("DB_PASSWORD"),
             "HOST": "localhost",
             "PORT": "3306",
-            "OPTIONS": {"charset": "utf8mb4"},
+            "OPTIONS": {
+                "charset": "utf8mb4"
+                },
         },
         
     }
