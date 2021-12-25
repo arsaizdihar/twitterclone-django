@@ -1,0 +1,5 @@
+.venv
+venv/
+media/
+*.sqlite3
+.vscode/

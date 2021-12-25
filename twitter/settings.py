@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
+import json
 import os
 from pathlib import Path
 
@@ -96,17 +97,14 @@ WSGI_APPLICATION = "twitter.wsgi.application"
 if PRODUCTION:
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.mysql",
+            "ENGINE": "django.db.backends." + os.environ.get("DB_ENGINE", "mysql"),
             "NAME": os.environ.get("DB_NAME"),
             "USER": os.environ.get("DB_USER"),
             "PASSWORD": os.environ.get("DB_PASSWORD"),
-            "HOST": "localhost",
-            "PORT": "3306",
-            "OPTIONS": {
-                "charset": "utf8mb4"
-                },
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "3306"),
+            "OPTIONS": json.loads(os.environ.get("DB_OPTIONS", '{"charset": "utf8mb4"}')),
         },
-        
     }
 else:
     DATABASES = {
