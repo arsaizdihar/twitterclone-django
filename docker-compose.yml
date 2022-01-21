@@ -2,13 +2,14 @@ version: '3.7'
 
 services:
   db:
-    image: postgres
+    image: mysql
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - mysql_data:/var/lib/mysql
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_ROOT_PASSWORD=password
   web:
     volumes:
       - static:/static
@@ -23,4 +24,4 @@ services:
       - "8001:8000"
 volumes:
   static:
-  postgres_data:
+  mysql_data:

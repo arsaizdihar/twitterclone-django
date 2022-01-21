@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "name": "twitter",
+      "script": "manage.py",
+      "args": ["runserver", "127.0.0.1:8000"],
+      "exec_mode": "fork",
+      "interpreter": "python"
+    }
+  ]
+}
