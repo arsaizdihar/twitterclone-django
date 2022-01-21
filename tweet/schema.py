@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from graphene_django.filter.fields import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
+from graphql_jwt.decorators import login_required
 from users.models import User
 from users.schema import UserWithFollowNode
 
@@ -141,6 +142,7 @@ class DeleteTweet(graphene.Mutation):
         id = graphene.Int(required=True)
 
     @staticmethod
+    @login_required
     def mutate(cls, info, id=None):
         tweet = Tweet.objects.filter(user=info.context.user, id=id).first()
         if not tweet:
@@ -159,6 +161,7 @@ class PostTweet(graphene.Mutation):
         file = Upload(required=False)
 
     @staticmethod
+    @login_required
     def mutate(root, info, text, file: InMemoryUploadedFile = None, comment_to=None):
         if not info.context.user.is_authenticated:
             return None
@@ -180,6 +183,7 @@ class LikeMutation(graphene.Mutation):
         tweet_id = graphene.Int(required=True)
 
     @staticmethod
+    @login_required
     def mutate(root, info, tweet_id):
         if not info.context.user.is_authenticated:
             return None
@@ -203,6 +207,7 @@ class RetweetMutation(graphene.Mutation):
         tweet_id = graphene.Int(required=True)
 
     @staticmethod
+    @login_required
     def mutate(root, info, tweet_id):
         if not info.context.user.is_authenticated:
             return None

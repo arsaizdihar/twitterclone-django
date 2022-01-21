@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 import json
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -69,6 +70,7 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_WHITELIST = ["http://localhost:3000"]
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "twitter.urls"
 
@@ -139,7 +141,10 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.ObtainJSONWebToken",
     ],
     "JWT_VERIFY_EXPIRATION": True,
+    'JWT_EXPIRATION_DELTA': timedelta(days=30),
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_VERIFY": True,
+    "JWT_ALLOW_REFRESH": True,
 }
 
 GRAPHQL_AUTH = {
@@ -157,6 +162,7 @@ GRAPHQL_AUTH = {
         "following": ["exact"],
         "followers": ["exact"],
     },
+    "SEND_ACTIVATION_EMAIL": False
 }
 
 

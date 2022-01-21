@@ -2,7 +2,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.filter.fields import DjangoFilterConnectionField
 from graphql_auth.schema import UserNode
-from graphql_jwt.shortcuts import create_refresh_token, get_token
+from graphql_jwt.decorators import login_required
 
 from .models import User
 
@@ -120,6 +120,7 @@ class FollowQuery(graphene.ObjectType):
 class MeQuery(graphene.ObjectType):
     me = graphene.Field(UserWithFollowNode)
 
+    @login_required
     def resolve_me(self, info):
         user = info.context.user
         if user.is_authenticated:
@@ -145,6 +146,7 @@ class AcceptFollow(graphene.Mutation):
         user_id = graphene.Int(required=True)
 
     @staticmethod
+    @login_required
     def mutate(cls, info, user_id):
         if (
             not info.context.user.is_authenticated
@@ -176,6 +178,7 @@ class FollowUser(graphene.Mutation):
         user_id = graphene.Int(required=True)
 
     @staticmethod
+    @login_required
     def mutate(cls, info, user_id):
         if (
             not info.context.user.is_authenticated
