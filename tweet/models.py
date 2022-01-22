@@ -24,7 +24,7 @@ class Tweet(models.Model):
         blank=True,
         null=True,
     )
-    image = models.ImageField(upload_to=get_image_directory, null=True, blank=True)
+    image = models.ImageField(upload_to=get_image_directory, null=True, blank=True, max_length=500)
     likes = models.ManyToManyField(
         User, related_name="likes", related_query_name="likes", blank=True
     )
